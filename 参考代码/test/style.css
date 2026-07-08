@@ -1,0 +1,61 @@
+body{display: flex; justify-content: center; padding-top: 50px;}
+.tip{margin-top: 10px;font-size: 14px;}
+.error{color: red;}
+.success{color: green;}
+input{padding: 8px; border: 2px solid #ccc; outline: none; transition: border-color 0.3s; width: 400px;}
+input.error-border{border-color: red;}
+input.success-border{border-color: green;}
+@keyframes fillBar {
+    from { width: 0; }
+    to   { width: 85%; }
+}
+.password-bar{
+    width: 420px;
+    height: 8px;
+    background: #eee;
+    border-radius: 4px;
+    margin: 10px 0 5px;
+}
+.password-bar-fill{
+    height: 100%;
+    border-radius: 4px;
+    width: 0;
+    transition: width 0.3s ease, background-color 0.3s ease;
+}
+.password-bar-fill.strength-weak{
+    width: 33%;
+    background-color: #ef4444;  
+}
+.password-bar-fill.strength-medium{
+    width: 66%;
+    background-color: #f59e0b; 
+}
+.password-bar-fill.strength-strong{
+    width: 100%;
+    background-color: #22c55e; 
+}
+.toggle-pwd, .toggle-pwd-confirm {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #007bff;
+  cursor: pointer;
+  font-size: 14px;
+  user-select: none;
+}
+.pwd-wrapper{
+    position: relative;
+    display: inline-block;
+}
+button[type="submit"] {
+  width: 100%; /* 宽度铺满父容器 */
+  padding: 12px; /* 按钮上下内边距，加高按钮更好点击 */
+  border: none; /* 去除默认黑色边框 */
+  background: #34db3c; /* 基础蓝色背景 */
+  color: white; /* 按钮文字白色 */
+  font-size: 16px; /* 按钮文字字号 */
+  border-radius: 4px; /* 按钮圆角 */
+  cursor: pointer; /* 悬浮手型 */
+  margin-top: 10px; /* 和上方手机号模块拉开距离 */
+}

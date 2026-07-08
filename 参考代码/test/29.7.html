@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8"> <title>网页</title>
+        <link rel="stylesheet" href="style.css"/>
+    </head>
+    <body>
+        <form id="registerForm">
+            <h3>用户名：</h3>
+            <input type="text" id="username" placeholder="4-16位，字母开头">
+            <div class="tip" id="tipUsername"></div>
+            <h3>密码：</h3>
+            <div class="pwd-wrapper">
+                <input type="password" id="password" placeholder="至少8位，包含数字和字母和特殊字符"><span class="toggle-pwd">显示</span>
+            </div>
+            <div class="password-bar"><div class="password-bar-fill animated"></div></div>
+            <div class="tip" id="tipPassword"></div>
+            <h3>确认密码：</h3>
+            <div class="pwd-wrapper">
+                <input type="password" id="password2" placeholder="再次输入密码"><span class="toggle-pwd-confirm">显示</span>
+            </div>
+            <div class="tip" id="tipPassword2"></div>
+            <h3>邮箱：</h3>
+            <input type="text" id="email" placeholder="请输入邮箱">
+            <div class="tip" id="tipEmail"></div>
+            <h3>手机号：</h3>
+            <input type="text" id="phone" placeholder="11位国内手机号">
+            <div class="tip" id="tipPhone"></div>
+            <button type='submit'>注册</button>
+        </form>
+        <script src="./main.js"></script>
+    </body>
+</html>
