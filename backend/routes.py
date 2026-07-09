@@ -6,8 +6,6 @@ from pydantic import BaseModel
 
 router = APIRouter()
 
-# --------------------- 请求模型 ---------------------
-
 class SearchReq(BaseModel):
     query: str
     n_results: int = 5
@@ -19,20 +17,47 @@ class ChatReq(BaseModel):
     model: str = ""
     base_url: str = ""
 
-class RebuildReq(BaseModel):
-    pdf_path: str
-    source_type: str = "law"
+# 登录注册请求模型
+class RegisterReq(BaseModel):
+    username: str
+    password: str
+    email: str = ""
+    phone: str = ""
 
+class LoginReq(BaseModel):
+    username: str
+    password: str
 
-# --------------------- 路由处理函数 ---------------------
-
-# 下面的函数通过 init_routes() 注入依赖，避免循环引用
 _deps = None
 
 def init_routes(deps: dict):
     """注入全局依赖（由 main.py 启动时调用）"""
     global _deps
     _deps = deps
+
+
+@router.post("/api/register")
+def register(req: RegisterReq):
+    """用户注册接口"""
+    #接收前端注册请求 → 调用数据库层写入 → 成功返回结果 / 失败返回 400 错误。
+    from database import register_user
+    result = register_user(req.username, req.password, req.email, req.phone)
+    if not result["success"]:
+        raise HTTPException(status_code=400, detail=result["message"])
+    return result
+
+
+@router.post("/api/login")
+def login(req: LoginReq):
+    """用户登录接口"""
+    from database import login_user
+    result = login_user(req.username, req.password)
+    if not result["success"]:
+        raise HTTPException(status_code=401, detail=result["message"])
+    # 返回简单token
+    result["token"] = f"token_{result['user_id']}_{req.username}"
+    # 登录成功 → 后端返回 {token: "token_1_zhangsan"}
+    return result
 
 
 @router.get("/")
@@ -69,7 +94,6 @@ def get_stats():
 @router.get("/api/files")
 def list_files():
     d = _deps
-    imported = d["get_imported"]()
     result = {"law": [], "sample": []}
     for directory, key in [(d["LAW_DIR"], "law"), (d["SAMPLE_DIR"], "sample")]:
         import os
@@ -79,8 +103,6 @@ def list_files():
             if f.lower().endswith(('.pdf', '.docx')):
                 result[key].append({
                     "filename": f,
-                    "full_path": os.path.join(directory, f),
-                    "imported": f in imported,
                 })
     return result
 
@@ -88,7 +110,7 @@ def list_files():
 @router.post("/api/search")
 def search(req: SearchReq):
     d = _deps
-    if not d["bm25_index"] or not d["collection"]:
+    if not d["jieba_tokens"] or not d["collection"]:
         raise HTTPException(status_code=503, detail="知识库尚未初始化")
     results = d["hybrid_search"](req.query, req.n_results)
     return {"query": req.query, "count": len(results), "results": results}
@@ -98,7 +120,7 @@ def search(req: SearchReq):
 def chat(req: ChatReq):
     """核心接口：RAG检索 → 格式化 → CoT Prompt → LLM生成"""
     d = _deps
-    if not d["bm25_index"] or not d["collection"]:
+    if not d["jieba_tokens"] or not d["collection"]:
         raise HTTPException(status_code=503, detail="知识库尚未初始化")
 
     # 法律至少取15条确保关键法条不被截断，案例另取2条
@@ -109,7 +131,7 @@ def chat(req: ChatReq):
     context_formatted = d["format_for_llm"](candidates)
     d["display_results"]([
         {"text": c["text"], "similarity": c.get("rrf_score", 0),
-         "articles": c.get("articles", ""), "page": c.get("page")}
+         "articles": c.get("articles", "")}
         for c in candidates
     ], title=f"📋 问答检索 [{req.question}]")
 
@@ -120,35 +142,14 @@ def chat(req: ChatReq):
         "question": req.question,
         "answer": answer,
         "sources": [{
-            "articles": c.get("articles", ""), "page": c.get("page", "?"),
+            "articles": c.get("articles", ""), 
             "score": c.get("rrf_score", 0), "text": c["text"],
             "source_file": c.get("source_file", ""),
+            "source_type": c.get("source_type", ""),
+            "article_content": c.get("article_content", ""),
+            "article_key": c.get("article_key", ""),
         } for c in candidates],
     }
 
 
-@router.post("/api/rebuild")
-def rebuild(req: RebuildReq):
-    import os
-    from rank_bm25 import BM25Okapi
-    import jieba
 
-    d = _deps
-    if not os.path.exists(req.pdf_path):
-        raise HTTPException(status_code=404, detail=f"PDF不存在: {req.pdf_path}")
-    try:
-        new_count = d["import_one"](req.pdf_path, req.source_type)
-        all_data = d["collection"].get(include=['documents', 'metadatas'])
-        d["chunks"][:] = [
-            {"id": all_data['ids'][i], "text": all_data['documents'][i], **all_data['metadatas'][i]}
-            for i in range(len(all_data['ids']))
-        ]
-        d["bm25_index"] = BM25Okapi([list(jieba.cut(c["text"])) for c in d["chunks"]])
-        return {
-            "message": f"导入完成 (type={req.source_type})",
-            "pdf": req.pdf_path,
-            "chunks_parsed": new_count,
-            "total_chunks": d["collection"].count(),
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))

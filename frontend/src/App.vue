@@ -7,11 +7,35 @@
           <el-icon :size="28" color="#1a56db"><Scale /></el-icon>
           <h1>智能法律咨询助手</h1>
         </div>
+        <div class="user-area">
+          <template v-if="isLoggedIn">
+            <span class="welcome-text">欢迎, {{ username }}</span>
+            <el-button text style="color: white;" @click="logout">退出</el-button>
+          </template>
+        </div>
       </div>
     </header>
 
-    <!-- 主内容区 -->
-    <main class="main-content">
+    <!-- 登录/注册弹窗 -->
+    <el-dialog v-model="authVisible" :title="authMode === 'login' ? '用户登录' : '用户注册'"
+      width="500px" :close-on-click-modal="false">
+      <Login v-if="authMode === 'login'" @switch="showAuth" @login-success="onLoginSuccess" />
+      <Register v-else @switch="showAuth" @register-success="onRegisterSuccess" />
+    </el-dialog>
+
+    <!-- 未登录时显示全屏登录页 -->
+    <div v-if="!isLoggedIn" class="auth-page">
+      <div class="auth-container">
+        <div class="auth-logo">
+          <el-icon :size="48" color="#1a56db"><Scale /></el-icon>
+          <h1>智能法律咨询助手</h1>
+        </div>
+        <Login @switch="showAuth" @login-success="onLoginSuccess" />
+      </div>
+    </div>
+
+    <!-- 主内容区（已登录才显示） -->
+    <main v-else class="main-content">
       <el-tabs v-model="activeTab" class="main-tabs">
 
         <!-- Tab 1: 法条搜索 -->
@@ -140,18 +164,6 @@
               :closable="false" show-icon style="margin-bottom: 12px;" />
             <el-table v-else :data="fileList.law" size="small" border stripe style="margin-bottom: 16px;">
               <el-table-column prop="filename" label="文件名" />
-              <el-table-column label="状态" width="100" align="center">
-                <template #default="{ row }">
-                  <el-tag :type="row.imported ? 'success' : 'warning'" size="small">{{ row.imported ? '已导入' : '待导入' }}</el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column label="操作" width="120" align="center">
-                <template #default="{ row }">
-                  <el-button size="small" @click="importFile(row.full_path, 'sample')" :disabled="row.imported || rebuilding">
-                    {{ row.imported ? '已导入' : '导入' }}
-                  </el-button>
-                </template>
-              </el-table-column>
             </el-table>
 
             <h3>📋 案例知识库</h3>
@@ -160,40 +172,9 @@
               type="warning" :closable="false" show-icon style="margin-bottom: 12px;" />
             <el-table v-else :data="fileList.sample" size="small" border stripe style="margin-bottom: 16px;">
               <el-table-column prop="filename" label="文件名" />
-              <el-table-column label="状态" width="100" align="center">
-                <template #default="{ row }">
-                  <el-tag :type="row.imported ? 'success' : 'warning'" size="small">{{ row.imported ? '已导入' : '待导入' }}</el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column label="操作" width="120" align="center">
-                <template #default="{ row }">
-                  <el-button size="small" @click="importFile(row.full_path, 'sample')" :disabled="row.imported || rebuilding">
-                    {{ row.imported ? '已导入' : '导入' }}
-                  </el-button>
-                </template>
-              </el-table-column>
             </el-table>
-
-            <el-divider content-position="left">手动导入</el-divider>
-            <el-form inline>
-              <el-form-item label="文件绝对路径">
-                <el-input v-model="newPdfNameLaw" placeholder="如: D:\Code\zqdb\data\law\民法典.docx" style="width: 400px;" />
-              </el-form-item>
-              <el-form-item>
-                <el-button type="primary" @click="handleRebuild('law')" :loading="rebuilding">导入到法律知识库</el-button>
-              </el-form-item>
-            </el-form>
-            <el-form inline style="margin-top: 8px;">
-              <el-form-item label="文件绝对路径">
-                <el-input v-model="newPdfNameSample" placeholder="如: D:\Code\zqdb\data\sample\案例.docx" style="width: 400px;" />
-              </el-form-item>
-              <el-form-item>
-                <el-button type="success" @click="handleRebuild('sample')" :loading="rebuilding">导入到案例知识库</el-button>
-              </el-form-item>
-            </el-form>
           </div>
         </el-tab-pane>
-
       </el-tabs>
     </main>
   </div>
@@ -202,8 +183,40 @@
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
 import axios from 'axios'
+import Login from './views/Login.vue'
+import Register from './views/Register.vue'
 
 const api = axios.create({ baseURL: '/api', timeout: 30000 })
+
+// 登录状态管理
+const isLoggedIn = ref(!!localStorage.getItem('token'))
+const username = ref(localStorage.getItem('username') || '')
+const authVisible = ref(false)
+const authMode = ref('login')  // 'login' | 'register'
+
+function showAuth(mode) {
+  authMode.value = mode
+  authVisible.value = true
+}
+
+function onLoginSuccess(data) {
+  isLoggedIn.value = true
+  username.value = data.username
+  authVisible.value = false
+}
+
+function onRegisterSuccess() {
+  // 注册成功，切换到登录
+  authMode.value = 'login'
+}
+
+function logout() {
+  localStorage.removeItem('token')
+  localStorage.removeItem('username')
+  localStorage.removeItem('user_id')
+  isLoggedIn.value = false
+  username.value = ''
+}
 
 // 状态
 const activeTab = ref('search')
@@ -216,9 +229,6 @@ const chatInput = ref('')
 const messages = ref([])
 const chatLoading = ref(false)
 const chatMessagesRef = ref(null)
-const newPdfNameLaw = ref('')
-const newPdfNameSample = ref('')
-const rebuilding = ref(false)
 const fileList = ref({ law: [], sample: [] })
 // LLM 配置
 const apiKey = ref(localStorage.getItem('llm_api_key') || '')
@@ -263,27 +273,6 @@ async function handleChat() {
   } finally {
     chatLoading.value = false; scrollToBottom()
   }
-}
-
-async function handleRebuild(sourceType) {
-  const pdfPath = sourceType === 'law' ? newPdfNameLaw.value.trim() : newPdfNameSample.value.trim()
-  if (!pdfPath) return
-  rebuilding.value = true
-  try {
-    const res = await api.post('/rebuild', { pdf_path: pdfPath, source_type: sourceType })
-    alert(`✅ ${res.data.message}`)
-    newPdfNameLaw.value = ''
-    newPdfNameSample.value = ''
-    fetchStats(); fetchFiles()
-  } catch (e) { alert(`❌ 失败: ${e.response?.data?.detail || e.message}`) }
-  finally { rebuilding.value = false }
-}
-
-async function importFile(fullPath, sourceType) {
-  if (!confirm(`确定导入\n${fullPath}？`)) return
-  if (sourceType === 'law') newPdfNameLaw.value = fullPath
-  else newPdfNameSample.value = fullPath
-  await handleRebuild(sourceType)
 }
 
 function saveLlmConfig() {
@@ -344,6 +333,17 @@ onMounted(() => { fetchStats(); fetchFiles() })
 .logo h1 { font-size: 20px; font-weight: 600; margin: 0; }
 .header-stats { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 14px; }
 
+/* 用户登录区域 */
+.user-area {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.welcome-text {
+  font-size: 14px;
+}
+
 .main-content { flex: 1; max-width: 1200px; width: 100%; margin: 0 auto; padding: 20px; }
 .main-tabs { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
 
@@ -385,4 +385,24 @@ onMounted(() => { fetchStats(); fetchFiles() })
 
 .manage-panel { padding: 10px 0; }
 .manage-panel h3 { font-size: 15px; color: #374151; margin-bottom: 10px; }
+
+/* 全屏登录页 */
+.auth-page {
+  min-height: calc(100vh - 56px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #f0f5ff, #e8efff);
+}
+.auth-container {
+  text-align: center;
+}
+.auth-logo {
+  margin-bottom: 30px;
+}
+.auth-logo h1 {
+  font-size: 24px;
+  color: #1a56db;
+  margin-top: 12px;
+}
 </style>
