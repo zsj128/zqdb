@@ -1,0 +1,54 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: zqdb-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: "Aa@1233211234567"
+      MYSQL_DATABASE: "zqdb_db"
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-pAa@1233211234567"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    container_name: zqdb-app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_USER: root
+      DB_PASSWORD: "Aa@1233211234567"
+      DB_NAME: zqdb_db
+      HF_ENDPOINT: https://hf-mirror.com
+      TZ: Asia/Shanghai
+      # 用户数据根目录：容器内统一存到 /root/.law_ai（挂载到宿主机用户目录）
+      LAW_AI_HOME: /root/.law_ai
+    volumes:
+      # 知识库与上传数据持久化：存到宿主机当前用户目录下的 .law_ai（像系统软件一样）
+      - ~/.law_ai:/root/.law_ai
+    ports:
+      - "8000:8000"
+    # 加速 embedding：Docker Desktop VM 分配 8 核后，容器用满这 8 核。
+    # 若 Docker Desktop -> Settings -> Resources 的 CPU 仍为 2，此处会报错，
+    # 请先把 VM 的 CPU 调到 8（或更高）再 docker compose up -d。
+    deploy:
+      resources:
+        limits:
+          cpus: "8"
+
+volumes:
+  mysql_data:

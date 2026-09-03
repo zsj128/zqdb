@@ -1,0 +1,28 @@
+# 版本控制
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+.venv
+venv
+backend/__pycache__
+
+# Node / 前端
+node_modules
+frontend/node_modules
+frontend/dist
+
+# 知识库数据（运行时通过 volume 挂载，不打包进镜像）
+chroma_kb
+data
+
+# 参考代码与临时文件
+参考代码
+*.md
+
+# 其他
+.DS_Store
+*.log

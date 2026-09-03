@@ -1,0 +1,31 @@
+# 环境变量与密钥
+.env
+.env.*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Node
+node_modules/
+dist/
+
+# 项目数据与模型（体积大/敏感，不上传）
+data/
+models/
+chroma_kb/
+
+# 用户本地数据
+.law_ai/
+
+# IDE 与项目本地数据
+.codebuddy/
+.vscode/
+.idea/
+
+# 数据库
+*.sqlite3
+*.db
