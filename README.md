@@ -5,17 +5,19 @@
 ## ✨ 功能特性
 
 - 📜 **法律条文检索**：关键词精准检索法条，按条文分块展示
-https://github.com/user-attachments/assets/53e6d556-8668-42f5-896a-33345c39a3f3
+<video src="https://github.com/user-attachments/assets/53e6d556-8668-42f5-896a-33345c39a3f3" autoplay loop muted playsinline width="100%"></video>
+
 - 🤖 **AI 智能问答**：基于知识库检索 + 大模型生成，支持流式输出
 - ⚖️ **案例分析**：展示指导性案例的案情、裁判要点与裁判结果
 - 🔍 **混合检索**：向量语义 + Jieba 关键词 + RRF 融合排序，检索精度更高
 - 🧠 **CoT 思维链**：结论 + 法律分析，自动标注法条引用 `【引用：《XX法》第X条】`
-https://github.com/user-attachments/assets/f498dee2-a574-4980-9f24-f5a7d019f2bb
+<video src="https://github.com/user-attachments/assets/f498dee2-a574-4980-9f24-f5a7d019f2bb" autoplay loop muted playsinline width="100%"></video>
+
 - 👥 **多用户隔离**：每用户独立知识库，数据互不干扰
 - 🛡 **服务容错**：超时 / 重试 / 熔断 / 兜底，LLM 不可用时降级返回法条原文
 - 🔐 **管理员后台**：查看数据库、按用户/表/行删除数据
 - 📊 **运行监控**：请求数、缓存命中率、降级率、熔断状态
-https://github.com/user-attachments/assets/81b53d28-c095-4fd7-8df2-f0945580aeae
+<video src="https://github.com/user-attachments/assets/81b53d28-c095-4fd7-8df2-f0945580aeae" autoplay loop muted playsinline width="100%"></video>
 
 ## 🛠 技术栈
 
